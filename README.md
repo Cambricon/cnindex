@@ -326,3 +326,9 @@ CNIndex具有严格线程安全，允许多个线程共享同一个CNIndex实例
 * export CNINDEX_LOG_LEVEL=6：显示TRACE级别日志
 * export CNINDEX_LOG_LEVEL=7：显示VERBOSE级别日志
 
+## Release notes
+
+### v1.0.0
+
+更新时间：2023年1月31日
+更新内容：初始版本

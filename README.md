@@ -30,7 +30,7 @@
 
 ## 1 介绍
 
-寒武纪CNIndex（Cambricon Index Library，寒武纪索引库）是一个基于寒武纪机器学习单元（MLU）以及寒武纪CNNL_EXTRA（Cambricon Neural NetworkExtra Library，寒武纪人工智能计算扩展库）对各类向量相似度搜索应用场景提供向量搜索的计算库。
+寒武纪CNIndex（Cambricon Index Library，寒武纪索引库）是一个基于寒武纪机器学习单元（MLU）以及寒武纪CNNL_EXTRA（寒武纪人工智能计算扩展库）对各类向量相似度搜索应用场景提供向量搜索的计算库。
 
 CNIndex针对此类应用场景，提供了高度优化的索引类型，同时也为用户提供简洁、高效、通用、灵活的编程接口。 
 

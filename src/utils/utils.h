@@ -30,8 +30,8 @@
 
 #if (CNRT_MAJOR_VERSION < 5 && CNNL_EXTRA_MAJOR == 0 && CNNL_EXTRA_MINOR <= 2)
   #define ENABLE_MLU200 1
-#elif (CNRT_MAJOR_VERSION >= 5 && CNNL_EXTRA_MAJOR == 0)
-#if CNNL_EXTRA_MINOR < 18
+#elif (CNRT_MAJOR_VERSION >= 5)
+#if (CNNL_EXTRA_MAJOR==0 && CNNL_EXTRA_MINOR < 18)
   #error "CNNL Extra version must >= 0.18"
 #else
   #define ENABLE_MLU300 1

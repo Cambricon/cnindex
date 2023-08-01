@@ -12,9 +12,9 @@ LDFLAGS     = -L/usr/lib/x86_64-linux-gnu -L$(NEUWARE_HOME)/lib64 -lcnnl_extra -
 
 LIB_NAME    = cnindex
 
-HEADERS     = $(wildcard include/*.h)
-SRC         = $(wildcard src/*.cpp src/utils/*.cpp)
-TESTS_SRC   = $(filter-out tests/common.cpp, $(wildcard tests/*.cpp))
+HEADERS     = $(wildcard include/*.h py/*.hpp)
+SRC         = $(wildcard src/*.cpp src/utils/*.cpp py/*.cpp)
+TESTS_SRC   = $(filter-out tests/common.cpp, $(wildcard tests/*.cpp) $())
 OBJ         = $(SRC:.cpp=.o)
 TESTS_OBJ   = $(TESTS_SRC:.cpp=.o)
 TESTS_BIN   = $(TESTS_OBJ:.o=)
@@ -38,13 +38,13 @@ $(DIRS):
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
 
 lib$(LIB_NAME).so: $(OBJ)
-	$(CXX) -shared $(LDFLAGS) $(STRIP_CMD) -Wl,-soname,$@ -o lib/$@ $^
+	$(CXX) -shared -fPIC $(LDFLAGS) $(STRIP_CMD) -Wl,-soname,$@ -o lib/$@ $^
 
-$(TESTS_BIN): %: %.o lib/lib$(LIB_NAME).so
+$(TESTS_BIN): %: %.o lib/lib$(LIB_NAME).so 
 	$(CXX) -o $@ $^ $(LDFLAGS) -L.
 
 .PHONY:clean
 clean:
 	rm -rf lib
-	rm -f $(OBJ) $(TESTS_OBJ) $(TESTS_BIN)
+	rm -f $(OBJ) $(TESTS_OBJ) py/*.o  $(TESTS_BIN)
 

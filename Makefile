@@ -46,5 +46,5 @@ $(TESTS_BIN): %: %.o lib/lib$(LIB_NAME).so
 .PHONY:clean
 clean:
 	rm -rf lib
-	rm -f $(OBJ) $(TESTS_OBJ) py/*.o  $(TESTS_BIN)
+	rm -f $(OBJ) $(TESTS_OBJ) py/*.o $(TESTS_BIN)
 

@@ -26,7 +26,7 @@
 #include <memory>
 #include <mutex>
 #include <vector>
-
+#include <iostream>
 #include <cnrt.h>
 #include <cnnl.h>
 #include <cnnl_extra.h>
@@ -158,9 +158,8 @@ cnindexReturn_t Flat3::Reset() {
   ids_.clear();
   if (vectors_base_mlu_) FreeMLUMemory(vectors_base_mlu_);
   vectors_base_mlu_ = nullptr;
-
   ntotal_ = 0;
-
+  nallocated_ = 0;
   return CNINDEX_RET_SUCCESS;
 }
 
@@ -323,10 +322,10 @@ cnindexReturn_t Flat3::Add(int n, const float *x, const int *ids) {
       LOGW(Flat) << "Add() index as id, discard input ids";
     }
   }
-
   int alloc_size = CeilPower2(ntotal_ + n);
   if (alloc_size > nallocated_) {
     void *vectors_base = AllocMLUMemory(sizeof(float) * (size_t)alloc_size * d_);
+
     if (!vectors_base) return CNINDEX_RET_ALLOC_FAILED;
     if (vectors_base_mlu_ && ntotal_ > 0) {
       cnrtMemcpy(vectors_base, vectors_base_mlu_, sizeof(float) * (size_t)ntotal_ * d_, CNRT_MEM_TRANS_DIR_DEV2DEV);

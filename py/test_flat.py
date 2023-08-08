@@ -3,7 +3,7 @@ from ctypes import *
 import numpy as np
 import sys
 import argparse
-from cnindex import PQ, Cpu_PQ, api
+from cnindex import Flat, Cpu_Flat, api
 from cnindex import cnindexMetric_t, cnindexReturn_t
 
 def compare(ref, test, batch, size, s, p):
@@ -54,37 +54,27 @@ def get_args():
                         help="number of query")
     parser.add_argument("--d", default= 256, type=int,
                         help="输入向量维度dim限制为256、512、1024")
-    parser.add_argument("--M", default= 32, type=int,
-                        help="PQ量化的向量子空间个数 M 限制为32、64")
-    parser.add_argument("--nbits", default = 8, type=int,
-                        help="输入向量分解成每个低维向量的存储位数 nbits 限制为 8")
     parser.add_argument("--ntotal", default = 400, type=int,
                         help="dataset's size")
     parser.add_argument("--topk", default = 1, type=int,
                         help="topk num")
+    parser.add_argument("--metric", default = 0, type=int,
+                        help="0:L2; 1:IP")
     return parser.parse_args()
 
-def test_search(device_id, mode_set, nq, d, M, nbits, ntotal, topk):
-    ksub = 1 << nbits
-    code_size = (nbits * M + 7) / 8
-
-    # prepare random centroids codes ids
-    centroids = np.random.uniform(-2.0, 2.0, ksub * d)
-
-    codes = np.random.randint(0, 256, int(ntotal * code_size), dtype=np.uint8)
-    ids_set = np.arange(0, ntotal) 
-
-    # create cnindex pq
-    pq = PQ(d, cnindexMetric_t.CNINDEX_METRIC_L2, M, nbits, device_id)
-    pq.SetCentorids(centroids)     
-
+def test_search(device_id, mode_set, nq, d, ntotal, topk, metric_type):
+    # create cnindex flat
+    flat = Flat(d, metric_type, device_id)
     # create cpu pq
-    cpu_pq = Cpu_PQ(d, M, nbits) 
-    cpu_pq.SetCentorids(centroids)
+    cpu_flat = Cpu_Flat(d, metric_type) 
 
-    # set data
-    pq.SetData(ntotal, codes, ids_set)
-    cpu_pq.SetData(ntotal, codes, ids_set) 
+    # prepare add vector and ids
+    addvecs = np.random.uniform(-2.0, 2.0, ntotal * d)
+    ids = np.arange(0, ntotal) 
+
+    # add data
+    flat.Add(ntotal, addvecs, ids)
+    cpu_flat.Add(ntotal, addvecs, ids) 
 
     # query vector
     search_data = np.random.uniform(-3.0, 3.0, nq * d)
@@ -93,14 +83,12 @@ def test_search(device_id, mode_set, nq, d, M, nbits, ntotal, topk):
     print("Search dataset:  " + "random" if mode_set == "s" else mode_set)
     print("       nquery :  ", nq)
     print("       d      :  ", d)
-    print("       M      :  ", M)
-    print("       nbits  :  ", nbits)
     print("       ntotal :  ", ntotal)
     print("       topk   :  ", topk)
 
     # search accuracy
-    mlu_labels, mlu_distances = pq.Search(nq, search_data, topk)
-    cpu_labels, cpu_distances = cpu_pq.Search(nq, search_data, topk) 
+    mlu_labels, mlu_distances = flat.Search(nq, search_data, topk)
+    cpu_labels, cpu_distances = cpu_flat.Search(nq, search_data, topk) 
     distances_mae, distances_mse = compare_mae_mse(cpu_distances, mlu_distances, nq ,topk)
     labels_diff = compare(cpu_labels, mlu_labels, nq, topk, True, True)
     
@@ -108,17 +96,20 @@ def test_search(device_id, mode_set, nq, d, M, nbits, ntotal, topk):
     print("distances_mae:{}%".format(distances_mae * 100))
     print("distances_mse:{}%".format(distances_mse * 100))
     
-def test_add(device_id, d, M, nbits, add_num):
-    pq = PQ(d, cnindexMetric_t.CNINDEX_METRIC_L2, M, nbits, device_id)
-    cpu_pq = Cpu_PQ(d, M, nbits) 
-    api.Test_PQ_Add.argtypes = (ctypes.c_void_p, ctypes.c_void_p, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int)  
-    api.Test_PQ_Add(pq._ptr, cpu_pq._ptr, d, M, nbits, add_num)
+def test_add(device_id, d, add_num):
+    # create cnindex flat
+    flat = Flat(d, cnindexMetric_t.CNINDEX_METRIC_L2, device_id)
 
-def test_remove(device_id, nremove, d, M, nbits, ntotal):
-    pq = PQ(d, cnindexMetric_t.CNINDEX_METRIC_L2, M, nbits, device_id)
-    cpu_pq = Cpu_PQ(d, M, nbits) 
-    api.Test_PQ_Remove.argtypes = (ctypes.c_void_p, ctypes.c_void_p, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int)  
-    api.Test_PQ_Remove(pq._ptr, cpu_pq._ptr, nremove, d, M, nbits, ntotal)
+    # crete cpu flat
+    cpu_flat = Cpu_Flat(d, cnindexMetric_t.CNINDEX_METRIC_L2) 
+    api.Test_Flat_Add.argtypes = (ctypes.c_void_p, ctypes.c_void_p, ctypes.c_int, ctypes.c_int)  
+    api.Test_Flat_Add(flat._ptr, cpu_flat._ptr, d, add_num)
+
+def test_remove(device_id, nremove, d, ntotal):
+    flat = Flat(d, cnindexMetric_t.CNINDEX_METRIC_L2, device_id)
+    cpu_flat = Cpu_Flat(d, cnindexMetric_t.CNINDEX_METRIC_L2) 
+    api.Test_Flat_Remove.argtypes = (ctypes.c_void_p, ctypes.c_void_p, ctypes.c_int, ctypes.c_int, ctypes.c_int)  
+    api.Test_Flat_Remove(flat._ptr, cpu_flat._ptr, nremove, d, ntotal)
 
 if __name__ == '__main__':
     args = get_args()
@@ -127,14 +118,13 @@ if __name__ == '__main__':
     mode_set = args.mode_set
     nq = args.nq 
     d = args.d
-    M = args.M
-    nbits = args.nbits
     ntotal = args.ntotal
     topk = args.topk
+    metric = args.metric
 
     if (mode_set == "a"):
-        test_add(device_id, d, M, nbits, ntotal)
+        test_add(device_id, d, ntotal)
     elif (mode_set == "r"):
-        test_remove(device_id, nq, d, M, nbits, ntotal)
+        test_remove(device_id, nq, d, ntotal)
     else:
-        test_search(device_id, mode_set, nq, d, M, nbits, ntotal, topk)
+        test_search(device_id, mode_set, nq, d, ntotal, topk, metric)

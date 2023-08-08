@@ -199,9 +199,11 @@ Flat3::~Flat3()
 ```
 
 python版本运行:
+
 ```bash
 cd py
 python test_pq.py --device_id 0 --mode_set s --nq 10 --d 256 --M 32 --nbits 8 --ntotal 400 --topk 1
+python test_flat.py --device_id 0 --mode_set s --nq 10 --d 256 --ntotal 400 --topk 1
 ```
 
 ## 8 性能精度测试

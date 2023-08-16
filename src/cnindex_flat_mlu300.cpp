@@ -189,10 +189,10 @@ cnindexReturn_t Flat3::Search(int n, const float *x, int k, int *ids, float *dis
 
   DeviceGuard(device_id_);
 
-  int ndeal = n;
+  int64_t ndeal = n;
   if (metric_ == CNINDEX_METRIC_L2) {
     ndeal = core_number_ * 32;  // d = 1024, ntotal=1M, topk=1000
-    ndeal = (int64_t)ndeal * 1024 * (1 << 20) / d_ / ntotal_;  // d, ntotal as variable
+    ndeal = ndeal * 1024 * (1 << 20) / d_ / ntotal_;  // d, ntotal as variable
     if (ndeal == 0) {
       ndeal = 1;
     } else if (ndeal > n) {
@@ -206,9 +206,9 @@ cnindexReturn_t Flat3::Search(int n, const float *x, int k, int *ids, float *dis
   // LOGE(Flat) << "Search() ndeal=" << ndeal;
 
   { int d[2] = { ntotal_, d_ }; SetDesc(vectors_base_desc_, 2, d, CNNL_LAYOUT_ARRAY, CNNL_DTYPE_FLOAT); }
-  { int d[2] = { ndeal, d_ }; SetDesc(query_vectors_desc_, 2, d, CNNL_LAYOUT_ARRAY, CNNL_DTYPE_FLOAT); }
-  { int d[2] = { ndeal, k }; SetDesc(topk_distances_desc_, 2, d, CNNL_LAYOUT_ARRAY, CNNL_DTYPE_FLOAT); }
-  { int d[2] = { ndeal, k }; SetDesc(topk_ids_desc_, 2, d, CNNL_LAYOUT_ARRAY, CNNL_DTYPE_INT32); }
+  { int d[2] = { (int)ndeal, d_ }; SetDesc(query_vectors_desc_, 2, d, CNNL_LAYOUT_ARRAY, CNNL_DTYPE_FLOAT); }
+  { int d[2] = { (int)ndeal, k }; SetDesc(topk_distances_desc_, 2, d, CNNL_LAYOUT_ARRAY, CNNL_DTYPE_FLOAT); }
+  { int d[2] = { (int)ndeal, k }; SetDesc(topk_ids_desc_, 2, d, CNNL_LAYOUT_ARRAY, CNNL_DTYPE_INT32); }
 
   size_t query_vectors_size = ALIGN_128(sizeof(int) * (size_t)n * d_);
   size_t workspace_size;
@@ -250,9 +250,9 @@ cnindexReturn_t Flat3::Search(int n, const float *x, int k, int *ids, float *dis
     if (exit_) return CNINDEX_RET_NOT_VALID;
     if ((dealed + ndeal) > n) ndeal = n - dealed;
 
-    { int d[2] = { ndeal, d_ }; SetDesc(query_vectors_desc_, 2, d, CNNL_LAYOUT_ARRAY, CNNL_DTYPE_FLOAT); }
-    { int d[2] = { ndeal, k }; SetDesc(topk_distances_desc_, 2, d, CNNL_LAYOUT_ARRAY, CNNL_DTYPE_FLOAT); }
-    { int d[2] = { ndeal, k }; SetDesc(topk_ids_desc_, 2, d, CNNL_LAYOUT_ARRAY, CNNL_DTYPE_INT32); }
+    { int d[2] = { (int)ndeal, d_ }; SetDesc(query_vectors_desc_, 2, d, CNNL_LAYOUT_ARRAY, CNNL_DTYPE_FLOAT); }
+    { int d[2] = { (int)ndeal, k }; SetDesc(topk_distances_desc_, 2, d, CNNL_LAYOUT_ARRAY, CNNL_DTYPE_FLOAT); }
+    { int d[2] = { (int)ndeal, k }; SetDesc(topk_ids_desc_, 2, d, CNNL_LAYOUT_ARRAY, CNNL_DTYPE_INT32); }
 
     void *query_vectors_mlu_t = static_cast<float *>(query_vectors_mlu) + dealed * d_;
     void *topk_distances_mlu_t = static_cast<float *>(topk_distances_mlu) + dealed * k;
@@ -270,7 +270,6 @@ cnindexReturn_t Flat3::Search(int n, const float *x, int k, int *ids, float *dis
     //                                      workspace_mlu, workspace_size,
     //                                      topk_distances_desc_, topk_distances_mlu_t,
     //                                      topk_ids_desc_, topk_ids_mlu_t);
-
     if (status != CNNL_STATUS_SUCCESS) {
       LOGE(Flat) << "Search() invoke op failed";
       return CNINDEX_RET_OP_FAILED;

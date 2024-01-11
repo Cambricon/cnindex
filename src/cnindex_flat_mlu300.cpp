@@ -328,6 +328,7 @@ cnindexReturn_t Flat3::Add(int n, const float *x, const int *ids) {
     if (!vectors_base) return CNINDEX_RET_ALLOC_FAILED;
     if (vectors_base_mlu_ && ntotal_ > 0) {
       cnrtMemcpy(vectors_base, vectors_base_mlu_, sizeof(float) * (size_t)ntotal_ * d_, CNRT_MEM_TRANS_DIR_DEV2DEV);
+      FreeMLUMemory(vectors_base_mlu_);
     }
     vectors_base_mlu_ = vectors_base;
     nallocated_ = alloc_size;

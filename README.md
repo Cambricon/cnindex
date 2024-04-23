@@ -318,7 +318,7 @@ CNIndex具有严格线程安全，允许多个线程共享同一个CNIndex实例
 选择需要的索引类型，并设置其log日志是否打开。
 
 **使用方法**
-* export CNINDEX_LOG_FILTER=IVFPQ:2,IVFSQ:3 ...
+* export CNINDEX_LOG_FILTER=IVFPQ:2,IVFPQ:3 ...
 
 ### 10.2 CNINDEX_LOG_LEVEL
 
